@@ -39,4 +39,12 @@ async function queryLogs(limit) {
   return rows;
 }
 
-module.exports = { pool, insertReadings, insertLog, queryHistory, queryLogs };
+async function pruneLogs(retentionDays) {
+  const { rowCount } = await pool.query(
+    `DELETE FROM logs WHERE ts < now() - ($1 || ' days')::interval`,
+    [retentionDays]
+  );
+  return rowCount;
+}
+
+module.exports = { pool, insertReadings, insertLog, queryHistory, queryLogs, pruneLogs };

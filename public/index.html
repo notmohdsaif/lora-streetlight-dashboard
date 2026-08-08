@@ -4,84 +4,75 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard - LoRa Project</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%92%A1</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="dash">
   <header class="dash-header">
     <h3>Dashboard - LoRa Project</h3>
-    <div class="ws-status" id="ws-status">Connecting...</div>
+    <button class="docs-btn" type="button">Docs</button>
   </header>
 
   <main>
     <section class="dash-row" aria-label="Control and node status">
-      <div class="dash-box">
-        <div class="title" style="visibility:hidden;">.</div>
-        <button class="bcast-circle" id="bcast-btn" data-state="OFF">OFF</button>
-        <div class="bcast-label" id="bcast-label">Broadcast, no commands sent yet</div>
+      <div class="dash-box bcast-box">
+        <div class="title">Control</div>
+        <label class="switch">
+          <input type="checkbox" class="cb" id="bcast-cb" aria-label="Broadcast ON/OFF">
+          <div class="toggle">
+            <div class="left">OFF</div>
+            <div class="right">ON</div>
+          </div>
+        </label>
       </div>
       <div class="dash-box">
         <div class="title">Node 1</div>
         <button class="bulb-btn" id="bulb-btn-1" aria-label="Toggle Node 1">
-          <svg class="bulb" id="bulb-1" viewBox="0 0 24 24"><path class="glass" d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><rect class="base" x="9" y="19.5" width="6" height="2.5" rx="1"/></svg>
+          <div class="bulb" id="bulb-1"><span></span><span></span></div>
         </button>
-        <div class="node-status offline" id="status-1">No data yet</div>
+        <div class="node-status offline" id="status-1"></div>
       </div>
       <div class="dash-box">
         <div class="title">Node 2</div>
         <button class="bulb-btn" id="bulb-btn-2" aria-label="Toggle Node 2">
-          <svg class="bulb" id="bulb-2" viewBox="0 0 24 24"><path class="glass" d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><rect class="base" x="9" y="19.5" width="6" height="2.5" rx="1"/></svg>
+          <div class="bulb" id="bulb-2"><span></span><span></span></div>
         </button>
-        <div class="node-status offline" id="status-2">No data yet</div>
+        <div class="node-status offline" id="status-2"></div>
       </div>
     </section>
 
     <section class="dash-row" aria-label="Core metrics">
-      <div class="dash-box">
+      <div class="dash-box metric-box">
         <div class="metric-top"><div class="title">Latency</div><div class="range-pill" data-param="latency_ms"><button data-range="1h" class="active">1h</button><button data-range="12h">12h</button><button data-range="24h">24h</button></div></div>
         <div class="metric-values">
           <div class="v-item"><div class="k">Node 1</div><div class="v" id="val-latency_ms-1">-- <span class="unit">ms</span></div></div>
           <div class="v-item node2"><div class="k">Node 2</div><div class="v" id="val-latency_ms-2">-- <span class="unit">ms</span></div></div>
         </div>
-        <canvas class="metric-chart" id="chart-latency_ms"></canvas>
+        <div class="chart-wrap"><canvas class="metric-chart" id="chart-latency_ms"></canvas><div class="chart-empty" id="empty-latency_ms">No data in this window</div></div>
       </div>
-      <div class="dash-box">
+      <div class="dash-box metric-box">
         <div class="metric-top"><div class="title">PDR</div><div class="range-pill" data-param="acked"><button data-range="1h" class="active">1h</button><button data-range="12h">12h</button><button data-range="24h">24h</button></div></div>
         <div class="metric-values">
           <div class="v-item"><div class="k">Node 1</div><div class="v" id="val-acked-1">-- <span class="unit">%</span></div></div>
           <div class="v-item node2"><div class="k">Node 2</div><div class="v" id="val-acked-2">-- <span class="unit">%</span></div></div>
         </div>
-        <canvas class="metric-chart" id="chart-acked"></canvas>
+        <div class="chart-wrap"><canvas class="metric-chart" id="chart-acked"></canvas><div class="chart-empty" id="empty-acked">No data in this window</div></div>
       </div>
-      <div class="dash-box">
+    </section>
+
+    <section class="dash-row" aria-label="Duty cycle and logs">
+      <div class="dash-box metric-box">
         <div class="metric-top"><div class="title">Duty Cycle</div><div class="range-pill" data-param="dc"><button data-range="1h" class="active">1h</button><button data-range="12h">12h</button><button data-range="24h">24h</button></div></div>
         <div class="metric-values">
           <div class="v-item"><div class="k">Node 1</div><div class="v" id="val-dc-1">-- <span class="unit">%</span></div></div>
           <div class="v-item node2"><div class="k">Node 2</div><div class="v" id="val-dc-2">-- <span class="unit">%</span></div></div>
         </div>
-        <canvas class="metric-chart" id="chart-dc"></canvas>
+        <div class="chart-wrap"><canvas class="metric-chart" id="chart-dc"></canvas><div class="chart-empty" id="empty-dc">No data in this window</div></div>
       </div>
-    </section>
-
-    <section class="dash-row" aria-label="Radio and system metrics">
-      <div class="dash-box">
-        <div class="metric-top"><div class="title">RSSI</div><div class="range-pill" data-param="rssi"><button data-range="1h" class="active">1h</button><button data-range="12h">12h</button><button data-range="24h">24h</button></div></div>
-        <div class="metric-values">
-          <div class="v-item"><div class="k">Node 1</div><div class="v" id="val-rssi-1">-- <span class="unit">dBm</span></div></div>
-          <div class="v-item node2"><div class="k">Node 2</div><div class="v" id="val-rssi-2">-- <span class="unit">dBm</span></div></div>
-        </div>
-        <canvas class="metric-chart" id="chart-rssi"></canvas>
-      </div>
-      <div class="dash-box">
-        <div class="metric-top"><div class="title">Mesh Health</div><div class="range-pill" data-param="mesh_health"><button data-range="1h" class="active">1h</button><button data-range="12h">12h</button><button data-range="24h">24h</button></div></div>
-        <div class="metric-values">
-          <div class="v-item"><div class="k">All nodes</div><div class="v" id="val-mesh_health">-- <span class="unit">% online</span></div></div>
-        </div>
-        <canvas class="metric-chart" id="chart-mesh_health"></canvas>
-      </div>
-      <div class="dash-box">
+      <div class="dash-box metric-box">
         <div class="title">Logs</div>
         <div class="log-list" id="log-list"></div>
       </div>

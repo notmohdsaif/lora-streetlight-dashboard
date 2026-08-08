@@ -4,11 +4,13 @@ Control and monitoring dashboard for a LoRa mesh-based duty-cycle-compliant smar
 
 ## Features
 
-- Broadcast ON/OFF control for the lamp mesh
-- Live per-node status (online/offline, relay state)
-- Historical charts: latency, packet delivery ratio, duty cycle (against the AS923 1% regulatory cap), RSSI, mesh health
+- Broadcast ON/OFF control for the lamp mesh, plus per-node ON/OFF control
+- Live per-node status (online/offline, relay state), with controls disabled for a node that isn't currently reachable
+- Historical charts: latency, packet delivery ratio, duty cycle (against the AS923 1% regulatory cap)
 - Live event log
 - Real-time updates over WebSocket, no polling
+
+RSSI and mesh-health readings are still recorded to Postgres (via the firmware's per-node and aggregate health payloads) but aren't currently charted in the UI - removed for now since with only 2 nodes in the testbed, the aggregate figure and the per-node status text already say the same thing.
 
 ## Stack
 
