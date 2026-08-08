@@ -66,9 +66,10 @@ function createMqttClient({ apiKey, broker, port, onMessage }) {
     onMessage({ type: 'reading', data, readings, logMessage });
   });
 
-  function publishControl(cmd) {
+  function publishControl(cmd, mask) {
     const controlTopic = `${apiKey}/v2/streams/status`;
-    client.publish(controlTopic, JSON.stringify({ cmd }));
+    const payload = mask === undefined ? { cmd } : { cmd, mask };
+    client.publish(controlTopic, JSON.stringify(payload));
   }
 
   return { publishControl, client };

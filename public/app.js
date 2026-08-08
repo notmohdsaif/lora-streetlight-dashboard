@@ -9,6 +9,7 @@ const CHART_CONFIGS = [
 
 const charts = {};
 const currentRange = {};
+const nodeStates = {}; // node id -> 'ON' | 'OFF', last known relay state
 
 function fmtTime(ts) {
   const d = new Date(ts);
@@ -135,6 +136,7 @@ function updateNodeStatus(node, data) {
   if (!bulb || !status) return;
 
   if (data.state !== undefined) {
+    nodeStates[node] = data.state;
     bulb.classList.toggle('on', data.state === 'ON');
   }
   if (data.online !== undefined) {
@@ -169,6 +171,17 @@ function updateBroadcastButton(stateStr) {
   btn.textContent = isOn ? 'ON' : 'OFF';
 }
 
+// Nodes can now be commanded individually, so the broadcast circle no
+// longer mirrors "whichever node reading arrived last" - it shows ON only
+// when every known node is ON, otherwise OFF. Skips the update until at
+// least one reading has been seen for every node (avoids a misleading OFF
+// flash before any data has loaded).
+function refreshBroadcastFromNodes() {
+  if (NODES.some((n) => nodeStates[n] === undefined)) return;
+  const allOn = NODES.every((n) => nodeStates[n] === 'ON');
+  updateBroadcastButton(allOn ? 'ON' : 'OFF');
+}
+
 function setWsStatus(connected) {
   const el = document.getElementById('ws-status');
   if (!el) return;
@@ -190,7 +203,7 @@ function connectWs() {
     const msg = JSON.parse(event.data);
     if (msg.type === 'reading' && typeof msg.data.node === 'number') {
       updateNodeStatus(msg.data.node, msg.data);
-      if (msg.data.state !== undefined) updateBroadcastButton(msg.data.state);
+      if (msg.data.state !== undefined) refreshBroadcastFromNodes();
       if (msg.logMessage) prependLog(Date.now(), msg.logMessage);
     } else if (msg.type === 'log') {
       prependLog(Date.now(), msg.message);
@@ -198,25 +211,24 @@ function connectWs() {
   };
 }
 
-// Broadcast is a single command to all nodes - its displayed ON/OFF must
-// reflect the last known commanded state, not a fresh per-page-load guess,
-// since a second tab or an external command (curl, another session) can
-// change it without this page ever seeing a click.
+// Nodes can be commanded individually now, so the broadcast circle's
+// displayed ON/OFF must reflect each node's own last known commanded state
+// (aggregated via refreshBroadcastFromNodes), not a fresh per-page-load
+// guess - since a second tab, an individual bulb click, or an external
+// command (curl, another session) can change any node without this page
+// ever seeing it happen.
 async function syncBroadcastState() {
   const results = await Promise.all(
     NODES.map((n) =>
       fetch(`/api/history?node=${n}&param=state&range=24h`).then((r) => r.json())
     )
   );
-  let latest = null;
-  results.forEach((rows) => {
+  results.forEach((rows, i) => {
     if (rows.length === 0) return;
     const last = rows[rows.length - 1];
-    if (!latest || new Date(last.ts) > new Date(latest.ts)) latest = last;
+    nodeStates[NODES[i]] = Number(last.value) === 1 ? 'ON' : 'OFF';
   });
-  if (latest) {
-    updateBroadcastButton(Number(latest.value) === 1 ? 'ON' : 'OFF');
-  }
+  refreshBroadcastFromNodes();
 }
 
 function setupBroadcast() {
@@ -245,10 +257,39 @@ function setupBroadcast() {
   });
 }
 
+// Individual node control - each bulb is its own broadcast target (mask
+// covering just that node). Mirrors setupBroadcast()'s disable-during-
+// request and optimistic-update pattern, applied per node instead of all.
+function setupNodeControls() {
+  NODES.forEach((node) => {
+    const btn = document.getElementById(`bulb-btn-${node}`);
+    const bulb = document.getElementById(`bulb-${node}`);
+    if (!btn || !bulb) return;
+
+    btn.addEventListener('click', async () => {
+      const nextCmd = bulb.classList.contains('on') ? 'OFF' : 'ON';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/control', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cmd: nextCmd, nodes: [node] }),
+        });
+        if (res.ok) {
+          bulb.classList.toggle('on', nextCmd === 'ON');
+        }
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
 async function init() {
   CHART_CONFIGS.forEach((c) => buildChart(c.param));
   setupRangePills();
   setupBroadcast();
+  setupNodeControls();
   await loadInitialLogs();
   await Promise.all([
     ...CHART_CONFIGS.map((c) => fetchHistory(c.param, '1h')),

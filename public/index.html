@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard - LoRa Project</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,12 +24,16 @@
       </div>
       <div class="dash-box">
         <div class="title">Node 1</div>
-        <svg class="bulb" id="bulb-1" viewBox="0 0 24 24"><path class="glass" d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><rect class="base" x="9" y="19.5" width="6" height="2.5" rx="1"/></svg>
+        <button class="bulb-btn" id="bulb-btn-1" aria-label="Toggle Node 1">
+          <svg class="bulb" id="bulb-1" viewBox="0 0 24 24"><path class="glass" d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><rect class="base" x="9" y="19.5" width="6" height="2.5" rx="1"/></svg>
+        </button>
         <div class="node-status offline" id="status-1">No data yet</div>
       </div>
       <div class="dash-box">
         <div class="title">Node 2</div>
-        <svg class="bulb" id="bulb-2" viewBox="0 0 24 24"><path class="glass" d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><rect class="base" x="9" y="19.5" width="6" height="2.5" rx="1"/></svg>
+        <button class="bulb-btn" id="bulb-btn-2" aria-label="Toggle Node 2">
+          <svg class="bulb" id="bulb-2" viewBox="0 0 24 24"><path class="glass" d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><rect class="base" x="9" y="19.5" width="6" height="2.5" rx="1"/></svg>
+        </button>
         <div class="node-status offline" id="status-2">No data yet</div>
       </div>
     </section>
