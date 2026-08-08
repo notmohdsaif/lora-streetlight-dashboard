@@ -5,6 +5,7 @@ const path = require('path');
 const { createMqttClient } = require('./src/mqttClient');
 const { createWsServer } = require('./src/wsServer');
 const { createControlRouter } = require('./src/routes/control');
+const { createHistoryRouter } = require('./src/routes/history');
 const { insertLog } = require('./src/db');
 
 const app = express();
@@ -24,6 +25,7 @@ const { publishControl } = createMqttClient({
 });
 
 app.use(createControlRouter({ publishControl, insertLog }));
+app.use(createHistoryRouter());
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Dashboard listening on ${PORT}`));
