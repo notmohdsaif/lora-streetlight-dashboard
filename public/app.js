@@ -10,6 +10,9 @@ const currentRange = {};
 const nodeStates = {}; // node id -> 'ON' | 'OFF', last known relay state
 const nodeOnlineReading = {}; // node id -> { value: boolean, at: ms } - last known online reading, any age
 const nodeRssi = {}; // node id -> last known RSSI, shown whenever a node reads as online
+const nodeConfirmed = {}; // node id -> bool, false when `state` is the bridge's best guess
+                           // after a lost ACK rather than something it actually heard - see
+                           // bridge_main.cpp's GIVE_UP path and project.md §12 item 22/23.
 
 function fmtAxisTime(ts) {
   const d = new Date(ts);
@@ -265,6 +268,7 @@ function isConfirmedOffline(node) {
 function updateNodeStatus(node, data) {
   if (data.state !== undefined) nodeStates[node] = data.state;
   if (data.rssi !== undefined) nodeRssi[node] = data.rssi;
+  if (data.confirmed !== undefined) nodeConfirmed[node] = data.confirmed;
   if (data.online !== undefined) {
     nodeOnlineReading[node] = { value: data.online, at: data.onlineAt ?? Date.now() };
   }
@@ -283,14 +287,19 @@ function applyNodeOnlineState(node) {
   const online = isDisplayOnline(node);
   status.classList.toggle('online', online);
   status.classList.toggle('offline', !online);
+  const unconfirmed = nodeConfirmed[node] === false;
   status.textContent = online
-    ? (nodeRssi[node] !== undefined ? `Online, RSSI ${nodeRssi[node]} dBm` : 'Online')
+    ? `${nodeRssi[node] !== undefined ? `Online, RSSI ${nodeRssi[node]} dBm` : 'Online'}${unconfirmed ? ' (unconfirmed)' : ''}`
     : 'Offline';
 
   // The bulb can only honestly show "on" if the node is currently believed
   // reachable - otherwise it's just replaying a last-known state that could
   // be stale, the same trust problem the "online" text itself had.
   bulb.classList.toggle('on', nodeStates[node] === 'ON' && online);
+  // Dimmed rather than a separate icon/badge - a lost ACK doesn't mean the
+  // state shown is wrong (onCmd() actuates unconditionally), just that the
+  // bridge is showing its best guess instead of something it actually heard.
+  bulb.classList.toggle('unconfirmed', unconfirmed);
 
   setNodeInteractivity(node);
   updateBroadcastInteractivity();
@@ -488,6 +497,11 @@ function setupNodeControls() {
         if (res.ok) {
           bulb.classList.toggle('on', nextCmd === 'ON');
           nodeStates[node] = nextCmd;
+          // Optimistic - the real WebSocket reading (ACK-confirmed or the
+          // bridge's give-up guess) supersedes this within a few seconds via
+          // updateNodeStatus/applyNodeOnlineState.
+          nodeConfirmed[node] = false;
+          bulb.classList.toggle('unconfirmed', true);
           refreshBroadcastFromNodes();
         } else {
           const err = await res.json();
