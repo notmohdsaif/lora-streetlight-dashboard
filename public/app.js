@@ -370,6 +370,20 @@ function connectWs() {
       updateNodeStatus(msg.data.node, msg.data);
       if (msg.data.state !== undefined) refreshBroadcastFromNodes();
       if (msg.logMessage) prependLog(Date.now(), msg.logMessage);
+
+      // A new reading landing in the DB doesn't move the chart/headline
+      // numbers on its own - fetchHistory only ran on load and range-pill
+      // clicks, so a card could sit on a stale bucket average until the
+      // next manual refresh. Re-pull whichever chart(s) this message's
+      // readings actually touched, at the range the user currently has open.
+      if (msg.readings && msg.readings.length) {
+        const changedParams = new Set(msg.readings.map((r) => r.param));
+        CHART_CONFIGS.forEach((c) => {
+          if (changedParams.has(c.param)) {
+            fetchHistory(c.param, currentRange[c.param]);
+          }
+        });
+      }
     } else if (msg.type === 'log') {
       prependLog(Date.now(), msg.message);
     }
