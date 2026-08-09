@@ -156,7 +156,6 @@ body { margin: 0; padding: 20px; background: #fff; }
   box-shadow: 0 0 20px #FFC94A, 0 0 40px #FFC94A, 0 0 60px rgba(255, 201, 74, .6), 0 0 85px rgba(255, 201, 74, .4);
   animation: bulb-warmup .5s ease-out;
 }
-.bulb.on.unconfirmed { opacity: .55; }
 .bulb-btn:hover:not(:disabled) .bulb:not(.on) { background: #777; }
 .bulb-btn:hover:not(:disabled) .bulb:not(.on)::before { background: #777; }
 
