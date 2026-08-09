@@ -370,6 +370,20 @@ function connectWs() {
       updateNodeStatus(msg.data.node, msg.data);
       if (msg.data.state !== undefined) refreshBroadcastFromNodes();
       if (msg.logMessage) prependLog(Date.now(), msg.logMessage);
+
+      // A new reading landing in the DB doesn't move the chart/headline
+      // numbers on its own - fetchHistory only ran on load and range-pill
+      // clicks, so a card could sit on a stale bucket average until the
+      // next manual refresh. Re-pull whichever chart(s) this message's
+      // readings actually touched, at the range the user currently has open.
+      if (msg.readings && msg.readings.length) {
+        const changedParams = new Set(msg.readings.map((r) => r.param));
+        CHART_CONFIGS.forEach((c) => {
+          if (changedParams.has(c.param)) {
+            fetchHistory(c.param, currentRange[c.param]);
+          }
+        });
+      }
     } else if (msg.type === 'log') {
       prependLog(Date.now(), msg.message);
     }
@@ -393,7 +407,12 @@ function connectWs() {
 // status text falls back to "Offline" - but only a *fresh* explicit false
 // disables the controls (see isConfirmedOffline above); otherwise the one
 // action that could refresh a stale reading would be the thing it disables.
-const ONLINE_FRESHNESS_MS = 10 * 60 * 1000;
+// Was 10 minutes - 5x looser than the bridge's own NODE_TIMEOUT (120s,
+// bridge_main.cpp), so a node the bridge had already given up on could
+// still show "Online" with a real-looking last RSSI for up to 8 more
+// minutes, inviting clicks that silently went nowhere. 150s gives a
+// ~30s margin over the bridge's cutoff for MQTT/WS propagation.
+const ONLINE_FRESHNESS_MS = 150 * 1000;
 
 async function syncNodeState() {
   await Promise.all(
