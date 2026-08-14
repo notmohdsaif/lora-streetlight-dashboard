@@ -5,9 +5,20 @@ const { insertReadings, insertLog } = require('./db');
 
 function createMqttClient({ apiKey, broker, port, onMessage }) {
   const pubTopic = `${apiKey}/v2/streams`;
+  // clientId left unset used to mean mqtt.js auto-generates a new random ID
+  // on every single reconnect attempt. The bridge firmware connects with a
+  // fixed clientId (FAVORIOT_DEV_ID) under this same apiKey; if FavorIOT's
+  // broker ties its one-session-per-account limit to the authenticated
+  // account rather than strict per-clientId MQTT semantics, a constantly
+  // shifting identity on every retry would produce exactly the endless
+  // "reconnecting -> connected -> reconnecting" loop found 2026-08-15 (no
+  // readings reaching Postgres for hours despite the bridge itself being
+  // confirmed healthy). A fixed, distinct clientId gives the dashboard a
+  // stable identity separate from the bridge's own connection.
   const client = mqtt.connect(`mqtt://${broker}:${port}`, {
     username: apiKey,
     password: apiKey,
+    clientId: `${apiKey}-dashboard`,
   });
   const onlineMap = {};
 
