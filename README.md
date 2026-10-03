@@ -10,18 +10,21 @@ Control and monitoring dashboard for a LoRa mesh-based duty-cycle-compliant smar
 - Live event log
 - Real-time updates over WebSocket, no polling
 
-RSSI and mesh-health readings are still recorded to Postgres (via the firmware's per-node and aggregate health payloads) but aren't currently charted in the UI - removed for now since with only 2 nodes in the testbed, the aggregate figure and the per-node status text already say the same thing.
+RSSI and mesh-health readings are still recorded in memory (via the firmware's per-node and aggregate health payloads) but aren't currently charted in the UI - removed for now since with only 2 nodes in the testbed, the aggregate figure and the per-node status text already say the same thing.
+
+## Data retention
+
+Readings (24h) and logs (last 500) are held in memory, so history resets when the service restarts or redeploys. There is no database.
 
 ## Stack
 
-Node.js, Express, MQTT.js, WebSocket (`ws`), PostgreSQL (`pg`), Chart.js. Plain HTML/CSS/JS frontend, no build step.
+Node.js, Express, MQTT.js, WebSocket (`ws`), Chart.js. Plain HTML/CSS/JS frontend, no build step.
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env   # fill in real values
-psql "$DATABASE_URL" -f src/schema.sql
 npm start
 ```
 
@@ -32,7 +35,6 @@ npm start
 | `FAVORIOT_API_KEY` | FavorIOT API key, used as MQTT username/password |
 | `FAVORIOT_BROKER` | FavorIOT MQTT broker hostname |
 | `FAVORIOT_PORT` | MQTT broker port (1883) |
-| `DATABASE_URL` | PostgreSQL connection string |
 | `PORT` | HTTP port (default 3000) |
 
 ## Testing

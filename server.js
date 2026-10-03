@@ -7,18 +7,7 @@ const { createWsServer } = require('./src/wsServer');
 const { createControlRouter } = require('./src/routes/control');
 const { createHistoryRouter } = require('./src/routes/history');
 const { createLogsRouter } = require('./src/routes/logs');
-const { insertLog, pruneLogs } = require('./src/db');
-
-const LOG_RETENTION_DAYS = 30;
-const PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
-
-function runLogPrune() {
-  pruneLogs(LOG_RETENTION_DAYS)
-    .then((deleted) => {
-      if (deleted > 0) console.log(`Pruned ${deleted} log row(s) older than ${LOG_RETENTION_DAYS} days`);
-    })
-    .catch((err) => console.error('Log prune failed:', err.message));
-}
+const { insertLog } = require('./src/db');
 
 const app = express();
 app.use(express.json());
@@ -39,9 +28,6 @@ const { publishControl } = createMqttClient({
 app.use(createControlRouter({ publishControl, insertLog }));
 app.use(createHistoryRouter());
 app.use(createLogsRouter());
-
-runLogPrune();
-setInterval(runLogPrune, PRUNE_INTERVAL_MS);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Dashboard listening on ${PORT}`));

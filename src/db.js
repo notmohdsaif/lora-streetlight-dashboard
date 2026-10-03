@@ -1,50 +1,37 @@
-const { Pool } = require('pg');
+// In-memory store replacing Postgres. History is lost on restart/redeploy.
+// Keeps 24h of readings (the longest chart range) and the last MAX_LOGS log lines.
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_LOGS = 500;
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const readings = []; // { ts, node, param, value }, oldest first
+const logs = []; // { ts, message }, oldest first
 
-async function insertReadings(rows, raw) {
+function prune(now) {
+  while (readings.length && now - readings[0].ts > MAX_AGE_MS) readings.shift();
+}
+
+async function insertReadings(rows) {
   if (!rows || rows.length === 0) return;
-  const values = [];
-  const params = [];
-  rows.forEach((r, i) => {
-    const base = i * 4;
-    values.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`);
-    params.push(r.node, r.param, r.value, raw ? JSON.stringify(raw) : null);
-  });
-  const sql = `INSERT INTO readings (node, param, value, raw) VALUES ${values.join(', ')}`;
-  await pool.query(sql, params);
+  const ts = new Date();
+  prune(ts);
+  rows.forEach((r) => readings.push({ ts, node: r.node, param: r.param, value: r.value }));
 }
 
 async function insertLog(message) {
-  await pool.query('INSERT INTO logs (message) VALUES ($1)', [message]);
+  logs.push({ ts: new Date(), message });
+  if (logs.length > MAX_LOGS) logs.shift();
 }
 
+// interval is a rangeToInterval() string such as '12 hours'
 async function queryHistory(node, param, interval) {
-  const sql = `
-    SELECT ts, value FROM readings
-    WHERE param = $1
-      AND ($2::int IS NULL OR node = $2)
-      AND ts > now() - $3::interval
-    ORDER BY ts ASC
-  `;
-  const { rows } = await pool.query(sql, [param, node, interval]);
-  return rows;
+  const cutoff = Date.now() - parseInt(interval, 10) * 60 * 60 * 1000;
+  return readings
+    .filter((r) => r.param === param && (node === null || r.node === node) && r.ts > cutoff)
+    .map(({ ts, value }) => ({ ts, value }));
 }
 
 async function queryLogs(limit) {
-  const { rows } = await pool.query(
-    'SELECT ts, message FROM logs ORDER BY ts DESC LIMIT $1',
-    [limit]
-  );
-  return rows;
+  return logs.slice(-limit).reverse();
 }
 
-async function pruneLogs(retentionDays) {
-  const { rowCount } = await pool.query(
-    `DELETE FROM logs WHERE ts < now() - ($1 || ' days')::interval`,
-    [retentionDays]
-  );
-  return rowCount;
-}
-
-module.exports = { pool, insertReadings, insertLog, queryHistory, queryLogs, pruneLogs };
+module.exports = { insertReadings, insertLog, queryHistory, queryLogs };
